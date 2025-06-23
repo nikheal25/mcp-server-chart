@@ -37,7 +37,7 @@ npm start
 
 Charts saved as actual SVG image files:
 
-```
+```text
 ./generated-charts/
 ├── column_1703876543210.svg
 ├── pie_1703876543211.svg
@@ -52,6 +52,7 @@ Charts saved as actual SVG image files:
 ## ⚙️ Configuration
 
 Set output directory:
+
 ```bash
 export CHART_OUTPUT_DIR=./my-charts
 ```
@@ -61,6 +62,7 @@ export CHART_OUTPUT_DIR=./my-charts
 ### Claude/Cursor/VSCode
 
 **Mac/Linux:**
+
 ```json
 {
   "mcpServers": {
@@ -77,6 +79,7 @@ export CHART_OUTPUT_DIR=./my-charts
 ```
 
 **Windows:**
+
 ```json
 {
   "mcpServers": {
@@ -95,6 +98,7 @@ export CHART_OUTPUT_DIR=./my-charts
 ## 📈 Example Usage
 
 ### Column Chart with Groups
+
 ```javascript
 {
   "data": [
@@ -110,6 +114,7 @@ export CHART_OUTPUT_DIR=./my-charts
 ```
 
 ### Pie Chart
+
 ```javascript
 {
   "data": [
@@ -122,6 +127,7 @@ export CHART_OUTPUT_DIR=./my-charts
 ```
 
 ### Line Chart
+
 ```javascript
 {
   "data": [
@@ -146,16 +152,19 @@ export CHART_OUTPUT_DIR=./my-charts
 ## 🔧 Development
 
 ### Build
+
 ```bash
 npm run build
 ```
 
 ### Test
+
 ```bash
 npm test
 ```
 
 ### Run Locally
+
 ```bash
 npm start
 ```
@@ -177,6 +186,7 @@ npx ts-node convert-svg-to-png.ts ./generated-charts ./png-output
 ```
 
 Supports multiple conversion tools:
+
 - `rsvg-convert` (recommended)
 - ImageMagick
 - Inkscape
@@ -185,16 +195,19 @@ Supports multiple conversion tools:
 ## 🐛 Troubleshooting
 
 ### Charts Not Generating?
+
 - Check directory permissions
 - Verify `CHART_OUTPUT_DIR` is writable
 - Check console for error messages
 
 ### Broken/Empty Charts?
+
 - Ensure data format matches examples
 - Verify required fields (`category`, `value`)
 - Check that values are numeric
 
 ### File Issues?
+
 - Try different output directory
 - Check disk space
 - Verify file permissions
