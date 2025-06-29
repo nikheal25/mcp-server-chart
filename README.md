@@ -57,6 +57,89 @@ Set output directory:
 export CHART_OUTPUT_DIR=./my-charts
 ```
 
+## 🐳 Docker
+
+### Build Image
+
+```bash
+docker build -t mcp-chart-server .
+```
+
+### Run with Different Transports
+
+**Streamable HTTP Transport (Default):**
+
+```bash
+docker run -e TRANSPORT=streamable -e PORT=1122 -p 1122:1122 mcp-chart-server
+```
+
+**SSE Transport:**
+
+```bash
+docker run -e TRANSPORT=sse -e PORT=1123 -p 1123:1123 mcp-chart-server
+```
+
+**Stdio Transport:**
+
+```bash
+docker run -e TRANSPORT=stdio mcp-chart-server
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRANSPORT` | `stdio` | Transport type: `stdio`, `sse`, or `streamable` |
+| `PORT` | `1122` | Port number for HTTP transports |
+| `ENDPOINT` | `/mcp` | Endpoint path for streamable, `/sse` for SSE |
+
+### Test the Server
+
+```bash
+# Health check
+curl http://localhost:1122/health
+
+# Ping test
+curl http://localhost:1122/ping
+```
+
+### Remove/Cleanup
+
+**Stop running container:**
+
+```bash
+docker ps                           # Find container ID
+docker stop <container-id>          # Stop container
+```
+
+**Remove container:**
+
+```bash
+docker rm <container-id>            # Remove stopped container
+```
+
+**Remove image:**
+
+```bash
+docker rmi mcp-chart-server         # Remove the image
+```
+
+**Full cleanup:**
+
+```bash
+# Stop all containers
+docker stop $(docker ps -q)
+
+# Remove all containers
+docker rm $(docker ps -aq)
+
+# Remove the image
+docker rmi mcp-chart-server
+
+# Clean up system (optional)
+docker system prune -f
+```
+
 ## 🤖 MCP Integration
 
 ### Claude/Cursor/VSCode

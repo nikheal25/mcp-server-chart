@@ -12,12 +12,12 @@ const { values } = parseArgs({
     transport: {
       type: "string",
       short: "t",
-      default: "stdio",
+      default: process.env.TRANSPORT || "stdio",
     },
     port: {
-      type: "string",
+      type: "string", 
       short: "p",
-      default: "1122",
+      default: process.env.PORT || "1122",
     },
     endpoint: {
       type: "string",
@@ -48,22 +48,20 @@ Options:
 }
 
 // Run in the specified transport mode
-const transport = values.transport.toLowerCase();
+const transport = values.transport?.toLowerCase() || "stdio";
 const port = Number.parseInt(values.port as string, 10);
-// Use provided endpoint or default to "/mcp" for streamable
-const endpoint = "/mcp";
-runHTTPStreamableServer(endpoint, port).catch(console.error);
-// return
-// if (transport === "sse") {
-//   const port = Number.parseInt(values.port as string, 10);
-//   // Use provided endpoint or default to "/sse" for SSE
-//   const endpoint = values.endpoint || "/sse";
-//   runSSEServer(endpoint, port).catch(console.error);
-// } else if (transport === "streamable") {
-//   const port = Number.parseInt(values.port as string, 10);
-//   // Use provided endpoint or default to "/mcp" for streamable
-//   const endpoint = values.endpoint || "/mcp";
-//   runHTTPStreamableServer(endpoint, port).catch(console.error);
-// } else {
-//   runStdioServer().catch(console.error);
-// }
+
+if (transport === "sse") {
+  // Use provided endpoint or default to "/sse" for SSE
+  const endpoint = values.endpoint || "/sse";
+  console.log(`🚀 Starting MCP Chart Server in SSE mode on port ${port} at ${endpoint}`);
+  runSSEServer(endpoint, port).catch(console.error);
+} else if (transport === "streamable") {
+  // Use provided endpoint or default to "/mcp" for streamable
+  const endpoint = values.endpoint || "/mcp";
+  console.log(`🚀 Starting MCP Chart Server in streamable mode on port ${port} at ${endpoint}`);
+  runHTTPStreamableServer(endpoint, port).catch(console.error);
+} else {
+  console.log(`🚀 Starting MCP Chart Server in stdio mode`);
+  runStdioServer().catch(console.error);
+}

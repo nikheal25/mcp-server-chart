@@ -14,5 +14,8 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Command will be provided by smithery.yaml
+# Expose default port
+EXPOSE 1122
+
+# Start the server - environment variables will be passed at runtime
 CMD ["node", "build/index.js"]
