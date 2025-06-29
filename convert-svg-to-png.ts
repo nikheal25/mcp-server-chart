@@ -104,10 +104,10 @@ async function createHtmlFallback(svgPath: string, pngPath: string): Promise<voi
   throw new Error(`No converter available. Created ${htmlPath} for manual conversion.`);
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("💥 Script failed:", error.message);
-    console.log(`
+// Run main function directly (ES module compatible)
+main().catch((error) => {
+  console.error("💥 Script failed:", error.message);
+  console.log(`
 🔧 To install SVG converters:
 
 macOS (Homebrew):
@@ -119,6 +119,5 @@ Ubuntu/Debian:
 Windows (Chocolatey):
   choco install rsvg-convert imagemagick inkscape
 `);
-    process.exit(1);
-  });
-} 
+  process.exit(1);
+}); 

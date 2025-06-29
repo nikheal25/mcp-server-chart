@@ -65,7 +65,7 @@ export const startSSEMcpServer = async (
     if (req.method === "POST" && req.url?.startsWith("/messages")) {
       const sessionId = new URL(
         req.url,
-        "https://example.com",
+        `http://localhost:${port}`,
       ).searchParams.get("sessionId");
 
       if (!sessionId) {

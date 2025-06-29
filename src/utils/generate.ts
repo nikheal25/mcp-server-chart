@@ -98,6 +98,12 @@ function generateSvgContent(type: string, options: any): string {
     case 'funnel':
       chartElements = generateFunnelChart(data, width, height, options);
       break;
+    case 'dual-axes':
+      chartElements = generateDualAxesChart(data, width, height, options);
+      break;
+    case 'histogram':
+      chartElements = generateHistogramChart(data, width, height, options);
+      break;
     default:
       chartElements = generateColumnChart(data, width, height, options);
   }
@@ -110,7 +116,7 @@ function generateSvgContent(type: string, options: any): string {
     .axis-title { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #333; }
     .chart-bar { stroke: #fff; stroke-width: 1; }
     .chart-line { fill: none; stroke-width: 2; }
-    .chart-point { fill: #fff; stroke-width: 2; }
+    .chart-point { stroke-width: 2; }
     .chart-area { fill-opacity: 0.3; }
     .axis { stroke: #333; stroke-width: 1; }
     .legend-text { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
@@ -536,6 +542,206 @@ function generateRadarChart(data: any[], width: number, height: number, options:
     result += `<rect x="20" y="${legendY - 8}" width="12" height="12" fill="${color}"/>`;
     result += `<text x="38" y="${legendY + 3}" class="legend-text">${group}</text>`;
   });
+  
+  return result;
+}
+
+function generateDualAxesChart(data: any[], width: number, height: number, options: any): string {
+  const chartArea = { x: 80, y: 60, width: width - 140, height: height - 140 };
+  
+  // Handle dual-axes format with series array
+  let barData: number[] = [];
+  let lineData: number[] = [];
+  let categories: string[] = [];
+  
+  if (options.series && Array.isArray(options.series) && options.categories) {
+    // New format: {series: [{data: [...], type: 'column'}, {data: [...], type: 'line'}], categories: [...]}
+    const columnSeries = options.series.find((s: any) => s.type === 'column');
+    const lineSeries = options.series.find((s: any) => s.type === 'line');
+    
+    barData = columnSeries ? columnSeries.data : [];
+    lineData = lineSeries ? lineSeries.data : [];
+    categories = options.categories || [];
+  } else if (Array.isArray(data) && data.length > 0) {
+    // Legacy format: [{category: 'Q1', bar: 100, line: 50}, ...]
+    const processedData = data.map(item => {
+      if (typeof item === 'object') {
+        return {
+          category: String(item.category || item.time || 'Unknown'),
+          barValue: Number(item.bar || item.value || 0),
+          lineValue: Number(item.line || item.value2 || 0)
+        };
+      }
+      return { category: 'Unknown', barValue: 0, lineValue: 0 };
+    });
+    
+    barData = processedData.map(d => d.barValue);
+    lineData = processedData.map(d => d.lineValue);
+    categories = processedData.map(d => d.category);
+  }
+  
+  if (barData.length === 0 && lineData.length === 0) {
+    return '<text x="400" y="300" text-anchor="middle" class="axis-label">No data available</text>';
+  }
+  
+  const maxBarValue = Math.max(...barData, 1);
+  const maxLineValue = Math.max(...lineData, 1);
+  
+  const dataLength = Math.max(barData.length, lineData.length, categories.length);
+  const barWidth = chartArea.width / (dataLength * 1.5);
+  let result = '';
+  
+  // Draw bars (left axis)
+  for (let i = 0; i < dataLength; i++) {
+    const x = chartArea.x + (i + 0.5) * (chartArea.width / dataLength);
+    
+    if (i < barData.length && barData[i] > 0) {
+      const barHeight = (barData[i] / maxBarValue) * chartArea.height;
+      const y = chartArea.y + chartArea.height - barHeight;
+      
+      result += `<rect x="${x - barWidth/2}" y="${y}" width="${barWidth}" height="${barHeight}" fill="#4285f4" stroke="#fff" stroke-width="1"/>`;
+      
+      // Value label on bar
+      if (barHeight > 20) {
+        result += `<text x="${x}" y="${y - 5}" text-anchor="middle" class="axis-label" font-size="10">${barData[i]}</text>`;
+      }
+    }
+    
+    // Category labels
+    if (i < categories.length) {
+      result += `<text x="${x}" y="${chartArea.y + chartArea.height + 20}" text-anchor="middle" class="axis-label">${categories[i]}</text>`;
+    }
+  }
+  
+  // Draw line (right axis)
+  let linePath = '';
+  for (let i = 0; i < Math.min(lineData.length, dataLength); i++) {
+    const x = chartArea.x + (i + 0.5) * (chartArea.width / dataLength);
+    const y = chartArea.y + chartArea.height - (lineData[i] / maxLineValue) * chartArea.height;
+    
+    if (i === 0) {
+      linePath += `M ${x} ${y}`;
+    } else {
+      linePath += ` L ${x} ${y}`;
+    }
+    
+    result += `<circle cx="${x}" cy="${y}" r="4" fill="#ea4335" stroke="#fff" stroke-width="2"/>`;
+    
+    // Value label on point
+    result += `<text x="${x}" y="${y - 10}" text-anchor="middle" class="axis-label" font-size="10">${lineData[i]}</text>`;
+  }
+  
+  result += `<path d="${linePath}" stroke="#ea4335" fill="none" stroke-width="2"/>`;
+  
+  // Axes
+  result += `<line x1="${chartArea.x}" y1="${chartArea.y}" x2="${chartArea.x}" y2="${chartArea.y + chartArea.height}" class="axis"/>`;
+  result += `<line x1="${chartArea.x + chartArea.width}" y1="${chartArea.y}" x2="${chartArea.x + chartArea.width}" y2="${chartArea.y + chartArea.height}" class="axis"/>`;
+  result += `<line x1="${chartArea.x}" y1="${chartArea.y + chartArea.height}" x2="${chartArea.x + chartArea.width}" y2="${chartArea.y + chartArea.height}" class="axis"/>`;
+  
+  // Left Y-axis labels (bars)
+  for (let i = 0; i <= 5; i++) {
+    const value = (maxBarValue / 5) * i;
+    const y = chartArea.y + chartArea.height - (i / 5) * chartArea.height;
+    result += `<text x="${chartArea.x - 10}" y="${y + 4}" text-anchor="end" class="axis-label">${Math.round(value)}</text>`;
+    if (i > 0) {
+      result += `<line x1="${chartArea.x - 5}" y1="${y}" x2="${chartArea.x}" y2="${y}" stroke="#ddd" stroke-width="1"/>`;
+    }
+  }
+  
+  // Right Y-axis labels (line)
+  for (let i = 0; i <= 5; i++) {
+    const value = (maxLineValue / 5) * i;
+    const y = chartArea.y + chartArea.height - (i / 5) * chartArea.height;
+    result += `<text x="${chartArea.x + chartArea.width + 10}" y="${y + 4}" text-anchor="start" class="axis-label">${value.toFixed(2)}</text>`;
+    if (i > 0) {
+      result += `<line x1="${chartArea.x + chartArea.width}" y1="${y}" x2="${chartArea.x + chartArea.width + 5}" y2="${y}" stroke="#ddd" stroke-width="1"/>`;
+    }
+  }
+  
+  // Axis titles
+  if (options.series && options.series[0] && options.series[0].axisYTitle) {
+    result += `<text x="${chartArea.x - 50}" y="${chartArea.y + chartArea.height/2}" text-anchor="middle" class="axis-title" transform="rotate(-90, ${chartArea.x - 50}, ${chartArea.y + chartArea.height/2})">${options.series[0].axisYTitle}</text>`;
+  }
+  if (options.series && options.series[1] && options.series[1].axisYTitle) {
+    result += `<text x="${chartArea.x + chartArea.width + 60}" y="${chartArea.y + chartArea.height/2}" text-anchor="middle" class="axis-title" transform="rotate(90, ${chartArea.x + chartArea.width + 60}, ${chartArea.y + chartArea.height/2})">${options.series[1].axisYTitle}</text>`;
+  }
+  if (options.axisXTitle) {
+    result += `<text x="${chartArea.x + chartArea.width/2}" y="${chartArea.y + chartArea.height + 50}" text-anchor="middle" class="axis-title">${options.axisXTitle}</text>`;
+  }
+  
+  // Legend
+  result += `<rect x="${chartArea.x}" y="${chartArea.y - 40}" width="12" height="12" fill="#4285f4"/>`;
+  result += `<text x="${chartArea.x + 18}" y="${chartArea.y - 31}" class="legend-text">Bars</text>`;
+  result += `<line x1="${chartArea.x + 80}" y1="${chartArea.y - 34}" x2="${chartArea.x + 92}" y2="${chartArea.y - 34}" stroke="#ea4335" stroke-width="2"/>`;
+  result += `<circle cx="${chartArea.x + 86}" cy="${chartArea.y - 34}" r="3" fill="#ea4335"/>`;
+  result += `<text x="${chartArea.x + 98}" y="${chartArea.y - 31}" class="legend-text">Line</text>`;
+  
+  return result;
+}
+
+function generateHistogramChart(data: any[], width: number, height: number, options: any): string {
+  if (!Array.isArray(data) || data.length === 0) {
+    return '<text x="400" y="300" text-anchor="middle" class="axis-label">No data available</text>';
+  }
+  
+  const chartArea = { x: 80, y: 60, width: width - 140, height: height - 140 };
+  
+  // Extract values for binning
+  const values = data.map(item => {
+    if (typeof item === 'object' && item.value !== undefined) {
+      return Number(item.value);
+    }
+    return Number(item) || 0;
+  }).filter(v => !isNaN(v));
+  
+  if (values.length === 0) {
+    return '<text x="400" y="300" text-anchor="middle" class="axis-label">No valid numeric data</text>';
+  }
+  
+  // Create bins
+  const bins = options.bins || 10;
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const binWidth = (maxValue - minValue) / bins;
+  
+  const histogram = Array(bins).fill(0);
+  values.forEach(value => {
+    const binIndex = Math.min(Math.floor((value - minValue) / binWidth), bins - 1);
+    histogram[binIndex]++;
+  });
+  
+  const maxFrequency = Math.max(...histogram);
+  const barWidth = chartArea.width / bins;
+  
+  let result = '';
+  
+  // Draw histogram bars
+  histogram.forEach((frequency, index) => {
+    const x = chartArea.x + index * barWidth;
+    const barHeight = (frequency / Math.max(maxFrequency, 1)) * chartArea.height;
+    const y = chartArea.y + chartArea.height - barHeight;
+    
+    result += `<rect x="${x}" y="${y}" width="${barWidth - 2}" height="${barHeight}" fill="#4285f4" stroke="#fff" stroke-width="1"/>`;
+    
+    // Bin label
+    const binStart = (minValue + index * binWidth).toFixed(1);
+    if (index % Math.ceil(bins / 6) === 0) { // Show every nth label
+      result += `<text x="${x + barWidth/2}" y="${chartArea.y + chartArea.height + 20}" text-anchor="middle" class="axis-label">${binStart}</text>`;
+    }
+    
+    // Frequency label on top of bar
+    if (barHeight > 15) {
+      result += `<text x="${x + barWidth/2}" y="${y - 5}" text-anchor="middle" class="axis-label">${frequency}</text>`;
+    }
+  });
+  
+  // Axes
+  result += `<line x1="${chartArea.x}" y1="${chartArea.y}" x2="${chartArea.x}" y2="${chartArea.y + chartArea.height}" class="axis"/>`;
+  result += `<line x1="${chartArea.x}" y1="${chartArea.y + chartArea.height}" x2="${chartArea.x + chartArea.width}" y2="${chartArea.y + chartArea.height}" class="axis"/>`;
+  
+  // Axis titles
+  result += `<text x="${chartArea.x + chartArea.width/2}" y="${chartArea.y + chartArea.height + 50}" text-anchor="middle" class="axis-title">Value Range</text>`;
+  result += `<text x="30" y="${chartArea.y + chartArea.height/2}" text-anchor="middle" class="axis-title" transform="rotate(-90 30 ${chartArea.y + chartArea.height/2})">Frequency</text>`;
   
   return result;
 }
